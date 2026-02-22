@@ -51,6 +51,18 @@ const ContractPage: React.FC = () => {
     return base;
   };
 
+  // Vérifier que les champs de base de l'utilisateur actuel sont remplis (pour activer le checkbox)
+  const isCurrentUserFieldsComplete = () => {
+    if (!role) return false;
+    if (role === 'fournisseuse') {
+      return contract.fournisseuse.nomComplet && contract.fournisseuse.cin;
+    } else {
+      return contract.distributrice.nomComplet &&
+             contract.distributrice.cin &&
+             (contract.distributrice as DistributorInfo).nomPage;
+    }
+  };
+
   const isCINValid = (photos: CINPhotos) =>
     photos.rectoStatus === 'valid' && photos.versoStatus === 'valid';
 
@@ -97,9 +109,13 @@ const ContractPage: React.FC = () => {
   const displayStatus = computeStatus();
 
   // Check if current user's fields and validation are complete
-  const canShareLink = role ? (
+  // Le bouton de partage est actif SEULEMENT si:
+  // 1. Tous les champs de l'utilisateur actuel sont remplis
+  // 2. Les CIN sont valides
+  // 3. Le checkbox de validation est coché
+  // 4. Les champs communs sont remplis
+  const canShareLink = role && isCurrentUserFieldsComplete() ? (
     role === 'fournisseuse' ? (
-      isPartyComplete(contract.fournisseuse) &&
       isCINValid(contract.fournisseuse.cinPhotos) &&
       contract.validationFournisseuse &&
       contract.lieu &&
@@ -107,7 +123,6 @@ const ContractPage: React.FC = () => {
       (contract.produits.robes || contract.produits.jupes || contract.produits.chemises || contract.produits.ensembles || contract.produits.autres) &&
       (contract.paiement.mvola || contract.paiement.orangeMoney || contract.paiement.airtelMoney)
     ) : (
-      isPartyComplete(contract.distributrice, true) &&
       isCINValid(contract.distributrice.cinPhotos) &&
       contract.validationDistributrice &&
       contract.lieu &&
@@ -207,7 +222,11 @@ const ContractPage: React.FC = () => {
                 onClick={handleShareLink}
                 disabled={!canShareLink}
                 className="text-xs"
-                title={!canShareLink ? "Complétez vos champs et validez avant de partager" : ""}
+                title={!canShareLink
+                  ? (!isCurrentUserFieldsComplete()
+                    ? "Remplissez tous vos champs d'abord"
+                    : "Remplissez tous les champs et validez avant de partager")
+                  : "Copier le lien à partager"}
               >
                 <Share2 size={14} className="mr-1" />
                 Partager
@@ -223,7 +242,11 @@ const ContractPage: React.FC = () => {
         <div className="max-w-3xl mx-auto px-4 pt-4">
           <div className={`rounded-lg border p-3 flex items-center justify-between gap-3 ${canShareLink ? 'border-accent/30 bg-accent/5' : 'border-muted/30 bg-muted/5'}`}>
             <p className="text-xs text-muted-foreground">
-              📤 {canShareLink ? `Partagez le lien avec ${role === 'fournisseuse' ? 'la Distributrice' : 'la Fournisseuse'} pour qu'elle remplisse sa partie du contrat.` : 'Complétez vos champs et validez avant de partager'}
+              📤 {canShareLink
+                ? `Partagez le lien avec ${role === 'fournisseuse' ? 'la Distributrice' : 'la Fournisseuse'} pour qu'elle remplisse sa partie du contrat.`
+                : !isCurrentUserFieldsComplete()
+                  ? `Remplissez tous vos champs (nom, CIN${role === 'distributrice' ? ', nom page' : ''}) avant de partager`
+                  : 'Complétez tous les champs communs et validez avant de partager'}
             </p>
             <Button
               variant="outline"
@@ -293,27 +316,45 @@ const ContractPage: React.FC = () => {
             </h3>
 
             {role === 'fournisseuse' && (
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border bg-card hover:border-accent/50 transition-colors">
+              <label className={`flex items-start gap-3 p-3 rounded-lg border ${isCurrentUserFieldsComplete() ? 'cursor-pointer bg-card border-border hover:border-accent/50 transition-colors' : 'cursor-not-allowed bg-muted/50 border-muted'}`}>
                 <Checkbox
                   checked={contract.validationFournisseuse}
-                  onCheckedChange={v => updateContract({ validationFournisseuse: !!v })}
+                  onCheckedChange={v => {
+                    if (isCurrentUserFieldsComplete()) {
+                      updateContract({ validationFournisseuse: !!v });
+                    }
+                  }}
+                  disabled={!isCurrentUserFieldsComplete()}
                 />
                 <div>
-                  <p className="text-sm font-medium">Je confirme que les informations de la Distributrice sont exactes</p>
-                  <p className="text-xs text-muted-foreground mt-1">En cochant cette case, vous attestez avoir vérifié les informations de la Distributrice</p>
+                  <p className={`text-sm font-medium ${!isCurrentUserFieldsComplete() ? 'text-muted-foreground' : ''}`}>Je confirme que les informations de la Distributrice sont exactes</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isCurrentUserFieldsComplete()
+                      ? 'En cochant cette case, vous attestez avoir vérifié les informations de la Distributrice'
+                      : 'Remplissez tous vos champs avant de confirmer'}
+                  </p>
                 </div>
               </label>
             )}
 
             {role === 'distributrice' && (
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-border bg-card hover:border-accent/50 transition-colors">
+              <label className={`flex items-start gap-3 p-3 rounded-lg border ${isCurrentUserFieldsComplete() ? 'cursor-pointer bg-card border-border hover:border-accent/50 transition-colors' : 'cursor-not-allowed bg-muted/50 border-muted'}`}>
                 <Checkbox
                   checked={contract.validationDistributrice}
-                  onCheckedChange={v => updateContract({ validationDistributrice: !!v })}
+                  onCheckedChange={v => {
+                    if (isCurrentUserFieldsComplete()) {
+                      updateContract({ validationDistributrice: !!v });
+                    }
+                  }}
+                  disabled={!isCurrentUserFieldsComplete()}
                 />
                 <div>
-                  <p className="text-sm font-medium">Je confirme que les informations de la Fournisseuse sont exactes</p>
-                  <p className="text-xs text-muted-foreground mt-1">En cochant cette case, vous attestez avoir vérifié les informations de la Fournisseuse</p>
+                  <p className={`text-sm font-medium ${!isCurrentUserFieldsComplete() ? 'text-muted-foreground' : ''}`}>Je confirme que les informations de la Fournisseuse sont exactes</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isCurrentUserFieldsComplete()
+                      ? 'En cochant cette case, vous attestez avoir vérifié les informations de la Fournisseuse'
+                      : 'Remplissez tous vos champs avant de confirmer'}
+                  </p>
                 </div>
               </label>
             )}
