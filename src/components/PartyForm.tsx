@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CINUpload from '@/components/CINUpload';
@@ -17,6 +17,49 @@ const PartyForm: React.FC<PartyFormProps> = ({ type, data, onChange, onVerifyCIN
   const title = isFournisseuse ? 'Informations de la Fournisseuse (Couturière)' : 'Informations de la Distributrice (Vendeuse en ligne)';
   const icon = isFournisseuse ? '✂️' : '🛒';
 
+  // État local pour les champs du formulaire
+  const [formData, setFormData] = useState({
+    nomComplet: data.nomComplet,
+    cin: data.cin,
+    adresse: data.adresse,
+    telephone: data.telephone,
+    nomPage: (data as DistributorInfo).nomPage || '',
+  });
+
+  // Synchroniser avec les données du parent quand elles changent
+  useEffect(() => {
+    setFormData({
+      nomComplet: data.nomComplet,
+      cin: data.cin,
+      adresse: data.adresse,
+      telephone: data.telephone,
+      nomPage: (data as DistributorInfo).nomPage || '',
+    });
+  }, [data]);
+
+  // Fonction pour sauvegarder au blur (sortie du champ)
+  const handleFieldBlur = (fieldName: keyof typeof formData, value: string) => {
+    onChange({ [fieldName]: value });
+  };
+
+  // Fonction pour gérer le changement du CIN avec limite de 14 chiffres
+  const handleCINChange = (value: string) => {
+    // Garder seulement les chiffres
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limiter à 12 chiffres
+    const limited = digitsOnly.slice(0, 12);
+    setFormData(prev => ({ ...prev, cin: limited }));
+  };
+
+  // Fonction pour gérer le changement du téléphone avec limite de 10 chiffres
+  const handlePhoneChange = (value: string) => {
+    // Garder seulement les chiffres
+    const digitsOnly = value.replace(/\D/g, '');
+    // Limiter à 10 chiffres
+    const limited = digitsOnly.slice(0, 10);
+    setFormData(prev => ({ ...prev, telephone: limited }));
+  };
+
   const updateCIN = (partial: Partial<CINPhotos>) => {
     onChange({ cinPhotos: { ...data.cinPhotos, ...partial } });
   };
@@ -32,24 +75,59 @@ const PartyForm: React.FC<PartyFormProps> = ({ type, data, onChange, onVerifyCIN
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Nom complet *</Label>
-          <Input value={data.nomComplet} onChange={e => onChange({ nomComplet: e.target.value })} disabled={readOnly} placeholder="Nom et prénom" />
+          <Input
+            value={formData.nomComplet}
+            onChange={e => setFormData(prev => ({ ...prev, nomComplet: e.target.value }))}
+            onBlur={() => handleFieldBlur('nomComplet', formData.nomComplet)}
+            disabled={readOnly}
+            placeholder="Nom et prénom"
+          />
         </div>
         <div className="space-y-1.5">
           <Label>CIN *</Label>
-          <Input value={data.cin} onChange={e => onChange({ cin: e.target.value })} disabled={readOnly} placeholder="Numéro CIN" />
+          <Input
+            value={formData.cin}
+            onChange={e => handleCINChange(e.target.value)}
+            onBlur={() => handleFieldBlur('cin', formData.cin)}
+            disabled={readOnly}
+            placeholder="Numéro CIN"
+            maxLength={14}
+          />
+          {formData.cin && <p className="text-xs text-muted-foreground">{formData.cin.length}/14 chiffres</p>}
         </div>
         <div className="space-y-1.5">
           <Label>Adresse</Label>
-          <Input value={data.adresse} onChange={e => onChange({ adresse: e.target.value })} disabled={readOnly} placeholder="Adresse complète" />
+          <Input
+            value={formData.adresse}
+            onChange={e => setFormData(prev => ({ ...prev, adresse: e.target.value }))}
+            onBlur={() => handleFieldBlur('adresse', formData.adresse)}
+            disabled={readOnly}
+            placeholder="Adresse complète"
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Téléphone</Label>
-          <Input type="tel" value={data.telephone} onChange={e => onChange({ telephone: e.target.value })} disabled={readOnly} placeholder="034 XX XXX XX" />
+          <Input
+            type="tel"
+            value={formData.telephone}
+            onChange={e => handlePhoneChange(e.target.value)}
+            onBlur={() => handleFieldBlur('telephone', formData.telephone)}
+            disabled={readOnly}
+            placeholder="034 XX XXX XX"
+            maxLength={10}
+          />
+          {formData.telephone && <p className="text-xs text-muted-foreground">{formData.telephone.length}/10 chiffres</p>}
         </div>
         {!isFournisseuse && (
           <div className="space-y-1.5 md:col-span-2">
             <Label>Nom de la page Facebook / Boutique</Label>
-            <Input value={(data as DistributorInfo).nomPage || ''} onChange={e => onChange({ nomPage: e.target.value })} disabled={readOnly} placeholder="Nom de la boutique en ligne" />
+            <Input
+              value={formData.nomPage}
+              onChange={e => setFormData(prev => ({ ...prev, nomPage: e.target.value }))}
+              onBlur={() => handleFieldBlur('nomPage', formData.nomPage)}
+              disabled={readOnly}
+              placeholder="Nom de la boutique en ligne"
+            />
           </div>
         )}
       </div>

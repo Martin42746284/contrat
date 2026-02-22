@@ -216,7 +216,7 @@ export function generateContractPDF(data: ContractData) {
   doc.line(14, doc.internal.pageSize.getHeight() - 15, pageWidth - 14, doc.internal.pageSize.getHeight() - 15);
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
-  doc.text('Document généré automatiquement — Contrat de vente en ligne — Identité vérifiée par IA', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+  doc.text('Document généré automatiquement — Contrat de vente en ligne — Identité vérifiée', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
   doc.save(`contrat-vente-${data.date}.pdf`);
 }
