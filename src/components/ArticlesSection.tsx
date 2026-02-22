@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,26 @@ interface ArticlesSectionProps {
 }
 
 const ArticlesSection: React.FC<ArticlesSectionProps> = ({ data, onUpdate, readOnly }) => {
+  const [autresDetail, setAutresDetail] = useState(data.produits.autresDetail);
+  const [commissionPercent, setCommissionPercent] = useState(data.prix.commissionPercent);
+  const [lieu, setLieu] = useState(data.lieu);
+  const [date, setDate] = useState(data.date);
+
+  useEffect(() => {
+    setAutresDetail(data.produits.autresDetail);
+  }, [data.produits.autresDetail]);
+
+  useEffect(() => {
+    setCommissionPercent(data.prix.commissionPercent);
+  }, [data.prix.commissionPercent]);
+
+  useEffect(() => {
+    setLieu(data.lieu);
+  }, [data.lieu]);
+
+  useEffect(() => {
+    setDate(data.date);
+  }, [data.date]);
   const updateProduits = (p: Partial<ProductSelection>) =>
     onUpdate({ produits: { ...data.produits, ...p } });
   const updatePrix = (p: Partial<PricingOption>) =>
@@ -65,8 +85,9 @@ const ArticlesSection: React.FC<ArticlesSectionProps> = ({ data, onUpdate, readO
         </div>
         {data.produits.autres && (
           <Input
-            value={data.produits.autresDetail}
-            onChange={e => updateProduits({ autresDetail: e.target.value })}
+            value={autresDetail}
+            onChange={e => setAutresDetail(e.target.value)}
+            onBlur={e => updateProduits({ autresDetail: e.target.value })}
             disabled={readOnly}
             placeholder="Précisez les autres produits..."
             className="mt-2"
@@ -105,8 +126,9 @@ const ArticlesSection: React.FC<ArticlesSectionProps> = ({ data, onUpdate, readO
               type="number"
               min={0}
               max={100}
-              value={data.prix.commissionPercent}
-              onChange={e => updatePrix({ commissionPercent: Number(e.target.value) })}
+              value={commissionPercent}
+              onChange={e => setCommissionPercent(Number(e.target.value))}
+              onBlur={e => updatePrix({ commissionPercent: Number(e.target.value) })}
               disabled={readOnly}
               className="w-24"
             />
@@ -215,8 +237,9 @@ const ArticlesSection: React.FC<ArticlesSectionProps> = ({ data, onUpdate, readO
           <div className="space-y-1.5">
             <Label>Lieu *</Label>
             <Input
-              value={data.lieu}
-              onChange={e => onUpdate({ lieu: e.target.value })}
+              value={lieu}
+              onChange={e => setLieu(e.target.value)}
+              onBlur={e => onUpdate({ lieu: e.target.value })}
               disabled={readOnly}
               placeholder="Ville ou commune"
             />
@@ -225,8 +248,9 @@ const ArticlesSection: React.FC<ArticlesSectionProps> = ({ data, onUpdate, readO
             <Label>Date</Label>
             <Input
               type="date"
-              value={data.date}
-              onChange={e => onUpdate({ date: e.target.value })}
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              onBlur={e => onUpdate({ date: e.target.value })}
               disabled={readOnly}
             />
           </div>
