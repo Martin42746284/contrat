@@ -96,6 +96,27 @@ const ContractPage: React.FC = () => {
   const isReadOnly = contract.status === 'valide';
   const displayStatus = computeStatus();
 
+  // Check if current user's fields and validation are complete
+  const canShareLink = role ? (
+    role === 'fournisseuse' ? (
+      isPartyComplete(contract.fournisseuse) &&
+      isCINValid(contract.fournisseuse.cinPhotos) &&
+      contract.validationFournisseuse &&
+      contract.lieu &&
+      contract.date &&
+      (contract.produits.robes || contract.produits.jupes || contract.produits.chemises || contract.produits.ensembles || contract.produits.autres) &&
+      (contract.paiement.mvola || contract.paiement.orangeMoney || contract.paiement.airtelMoney)
+    ) : (
+      isPartyComplete(contract.distributrice, true) &&
+      isCINValid(contract.distributrice.cinPhotos) &&
+      contract.validationDistributrice &&
+      contract.lieu &&
+      contract.date &&
+      (contract.produits.robes || contract.produits.jupes || contract.produits.chemises || contract.produits.ensembles || contract.produits.autres) &&
+      (contract.paiement.mvola || contract.paiement.orangeMoney || contract.paiement.airtelMoney)
+    )
+  ) : false;
+
   // Loading state
   if (loading) {
     return (
@@ -180,7 +201,14 @@ const ContractPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             {dbId && (
-              <Button variant="outline" size="sm" onClick={handleShareLink} className="text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShareLink}
+                disabled={!canShareLink}
+                className="text-xs"
+                title={!canShareLink ? "Complétez vos champs et validez avant de partager" : ""}
+              >
                 <Share2 size={14} className="mr-1" />
                 Partager
               </Button>
@@ -193,11 +221,17 @@ const ContractPage: React.FC = () => {
       {/* Share banner */}
       {dbId && !isReadOnly && (
         <div className="max-w-3xl mx-auto px-4 pt-4">
-          <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 flex items-center justify-between gap-3">
+          <div className={`rounded-lg border p-3 flex items-center justify-between gap-3 ${canShareLink ? 'border-accent/30 bg-accent/5' : 'border-muted/30 bg-muted/5'}`}>
             <p className="text-xs text-muted-foreground">
-              📤 Partagez le lien avec {role === 'fournisseuse' ? 'la Distributrice' : 'la Fournisseuse'} pour qu'elle remplisse sa partie du contrat.
+              📤 {canShareLink ? `Partagez le lien avec ${role === 'fournisseuse' ? 'la Distributrice' : 'la Fournisseuse'} pour qu'elle remplisse sa partie du contrat.` : 'Complétez vos champs et validez avant de partager'}
             </p>
-            <Button variant="outline" size="sm" onClick={handleShareLink} className="shrink-0 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShareLink}
+              disabled={!canShareLink}
+              className="shrink-0 text-xs"
+            >
               <Copy size={14} className="mr-1" />
               Copier le lien
             </Button>
